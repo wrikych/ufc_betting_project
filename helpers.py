@@ -201,36 +201,19 @@ def data_prep_and_feat_engineering(data, cat_thresh, squared_thresh):
     
     return results_dict
 
-### evaluate model on approach dataset
-def evaluate(bundle, test_size, model):
-    X = bundle[0]
+### encoding and breaking down each individual approach bundle 
+def break_down_bundle(bundle):
+    
+    enc = LabelEncoder()
+    
+    D = bundle[0]
     f = bundle[1]
     y = bundle[2]
+    X = D[f]
     
-    modded_X = X[f]
-    
-    X_train, X_test, y_train, y_test = train_test_split(modded_X, y, random_state=0, test_size=test_size)
-    model.fit(X_train, y_train)
-    y_preds = model.predict(X_test)
-    return accuracy_score(y_preds, y_test)
-
-### quick encoding for approach dictionary:
-def encode_if_needed(approaches_dict):
-    enc = LabelEncoder()
-
-    for key in approaches_dict.keys():
-        D = approaches_dict[key][0]
-        f = approaches_dict[key][1]
-        y = approaches_dict[key][2]
-        
-        X = D[f]
-        
-        _, cats = num_and_cat(X)
-        
-        if len(cats) > 0:
-            for cat in cats:
-                X[cat] = enc.fit_transform(X[cat])
-        else:
-            pass
+    _, cats = num_and_cat(X)
+    if len(cats) > 0:
+        for cat in cats:
+            X[cat] = enc.fit_transform(X[cat])
     
     return X, y
