@@ -180,3 +180,48 @@ def disc_cols_with_differences(data):
 
 ### FULL FLOW FOR PREPROCESSING AND DATA PREPARATION 
 
+### full flow to create all different approach datasets (NOT ENCODED)
+def data_prep_and_feat_engineering(data, cat_thresh, squared_thresh):
+    
+    ### handle nulls
+    data = handle_nulls(data)
+    
+    ### dictionary of approaches 
+    approach_dict = {1 : dummy_approach,
+                     2 : highest_correlating_num_cols,
+                     3 : highest_correlating_num_and_cat,
+                     4 : cols_of_differences,
+                     5 : differences_and_cat,
+                     6 : discussion_comment_betting_variables,
+                     7 : disc_cols_with_differences}
+    
+    results_dict = {}
+    
+    for i in range(1,8):
+        
+        if i == 2:
+            features, desired_cols, target = approach_dict[i](data, squared_thresh)
+        elif i in [3, 5]:
+            features, desired_cols, target = approach_dict[i](data, cat_thresh, squared_thresh)
+        else:
+            features, desired_cols, target = approach_dict[i](data)
+        
+        approach_name = f"approach {i}"
+        
+        results_dict[approach_name] = (features, desired_cols, target)
+    
+    return results_dict
+
+### evaluate model on approach dataset
+def evaluate(bundle, test_size, model):
+    X = bundle[0]
+    f = bundle[1]
+    y = bundle[2]
+    
+    modded_X = X[f]
+    
+    X_train, X_test, y_train, y_test = train_test_split(modded_X, y, random_state=0, test_size=test_size)
+    model.fit(X_train, y_train)
+    y_preds = model.predict(X_test)
+    return accuracy_score(y_preds, y_test)
+    
