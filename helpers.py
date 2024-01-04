@@ -51,17 +51,6 @@ def num_and_cat(features):
     cat_col = [col for col in features.columns if col not in num_col]
     return num_col, cat_col 
 
-### encode
-def encode_if_needed(D):
-    enc = LabelEncoder()
-    num, cat = num_and_cat(D)
-    
-    if len(cat) == 0:
-        return D
-    else:
-        for c in cat:
-            D[c] = enc.fit_transform(D[c])
-
 ### APPROACHES TO FEATURE ENGINEERING 
 
 def dummy_approach(data):
@@ -224,4 +213,24 @@ def evaluate(bundle, test_size, model):
     model.fit(X_train, y_train)
     y_preds = model.predict(X_test)
     return accuracy_score(y_preds, y_test)
+
+### quick encoding for approach dictionary:
+def encode_if_needed(approaches_dict):
+    enc = LabelEncoder()
+
+    for key in approaches_dict.keys():
+        D = approaches_dict[key][0]
+        f = approaches_dict[key][1]
+        y = approaches_dict[key][2]
+        
+        X = D[f]
+        
+        _, cats = num_and_cat(X)
+        
+        if len(cats) > 0:
+            for cat in cats:
+                X[cat] = enc.fit_transform(X[cat])
+        else:
+            pass
     
+    return X, y
