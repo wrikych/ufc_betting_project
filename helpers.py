@@ -1,8 +1,9 @@
 import numpy as np 
 import pandas as pd 
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.metrics import accuracy_score
+from sklearn.decomposition import PCA 
 
 ### Prep
 
@@ -217,3 +218,73 @@ def break_down_bundle(bundle):
             X[cat] = enc.fit_transform(X[cat])
     
     return X, y
+
+def majority_vote(model_list, features, target):
+    
+    X_train, X_test, y_train, y_test = train_test_split(features, target, random_state=0, test_size=0.2)
+    
+    preds_dict = {}
+    
+    i = 1
+    
+    final_preds = []
+    avg_vals = []
+    
+    for model in model_list:
+        model.fit(X_train, y_train)
+        model_title = f"model {i}"
+        model_preds = model.predict(X_test)
+        preds_dict[model_title] = model_preds
+        ind_val = accuracy_score(model_preds, y_test)
+        print(f"individual score for model {i} : {ind_val}")
+        avg_vals.append(ind_val)
+        i += 1
+    
+    for j in range(980):
+        
+        decision = 0
+        
+        for key in preds_dict.keys():
+            
+            decision += preds_dict[key][j]
+            
+        if decision < 3:
+            
+            final_preds.append(0)
+        
+        else:
+            
+            final_preds.append(1)
+    
+    final_preds_array = np.array(final_preds)
+    
+    print("")
+    print(f"Accuracy score for majority vote: {accuracy_score(final_preds_array, y_test)}")
+    print(f"Average of individual accuracy scores: {sum(avg_vals)/len(avg_vals)}")
+    print("******************************************************************************")
+    print("")
+    
+def pca_graph(data):
+    scale = StandardScaler()
+    pca = PCA()
+    
+    data_stand = scale.fit_transform(data)
+    data_pca = pca.fit_transform(data_stand)
+    
+    explained_variance_ratio = pca.explained_variance_ratio_
+    cumulative_explained_variance = explained_variance_ratio.cumsum()
+    
+    plt.plot(range(1, len(cumulative_explained_variance) + 1), cumulative_explained_variance, marker='o')
+    plt.title('Cumulative Explained Variance Ratio')
+    plt.xlabel('Number of Principal Components')
+    plt.ylabel('Cumulative Explained Variance Ratio')
+    plt.show()
+    
+    return data_pca
+
+def pca_execute(data, data_pca, optimal_num):
+    selected_components = data_pca[:, :optimal_num]
+    components_df = pd.DataFrame(data=selected_components, columns=[f'PC{i+1}' for i in range(optimal_num)])
+    results_df = pd.concat([data, components_df], axis=1)
+    
+    return results_df
