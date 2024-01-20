@@ -5,6 +5,8 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.metrics import accuracy_score
 from sklearn.decomposition import PCA 
 
+import matplotlib.pyplot as plt
+
 ### Prep
 
 ### replace nulls with mode/mean (for categorical/continuous)
