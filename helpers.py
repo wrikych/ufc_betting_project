@@ -289,4 +289,4 @@ def pca_execute(data, data_pca, optimal_num):
     components_df = pd.DataFrame(data=selected_components, columns=[f'PC{i+1}' for i in range(optimal_num)])
     results_df = pd.concat([data, components_df], axis=1)
     
-    return results_df
+    return results_df, components_df
