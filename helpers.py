@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.metrics import accuracy_score
 from sklearn.decomposition import PCA 
+from sklearn.ensemble import VotingClassifier
 from sklearn.utils import resample 
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go 
@@ -173,6 +174,7 @@ def disc_cols_with_differences(data):
     return features, desired_cols, target
 
 ### MORE EDA AND FEATURE ENGINEERING 
+
 ### Graph PCA 
 def pca_graph(data):
     scale = StandardScaler()
@@ -392,3 +394,51 @@ def simulate(feats, targ, ml_dict):
         model_preds = model.predict(X_test)
         print(ml)
         print(accuracy_score(model_preds, y_test))
+        
+### Create ML List for voting Classifier 
+def convert_dict_to_tuples(ml_dict):
+    ml_list = []
+    
+    for key in ml_dict.keys():
+        ml_list.append((key, ml_dict[key]))
+    
+    return ml_list
+
+### Execute Voting Classifier 
+def execute_voting_clf(feats, targ, ml_dict, vote_style='hard'):
+    
+    ml_list = convert_dict_to_tuples(ml_dict)
+    
+    vote = VotingClassifier(estimators=ml_list, voting=vote_style)
+    
+    X_train, X_test, y_train, y_test = train_test_split(feats, targ, test_size=0.2, random_state=0)
+    
+    vote.fit(X_train, y_train)
+    vote_preds = vote.predict(X_test)
+    return accuracy_score(vote_preds, y_test)
+
+
+### A more nuanced personal custom voting algorithm 
+def custom_ensemble_execute(feats, targ, ml_dict, tipping_point):
+    X_train, X_test, y_train, y_test = train_test_split(feats, targ, random_state=0, test_size=0.2)
+    ml_preds = {}
+
+    for ml in ml_dict:
+        model = ml_dict[ml]
+        model.fit(X_train, y_train)
+        model_preds = model.predict(X_test)
+        
+        ml_preds[ml] = model_preds
+    
+    final_preds = []
+
+    for i in range(len(ml_preds[list(ml_dict.keys())[1]])):
+        sum = 0
+        for key in ml_preds.keys():
+            sum += ml_preds[key][i]
+        if sum > tipping_point:
+            final_preds.append(1)
+        else:
+            final_preds.append(0)
+    
+    return accuracy_score(final_preds, y_test)
