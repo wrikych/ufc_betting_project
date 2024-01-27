@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.metrics import accuracy_score
 from sklearn.decomposition import PCA 
-
+from sklearn.utils import resample 
 import matplotlib.pyplot as plt
 
 ### Prep
@@ -290,3 +290,20 @@ def pca_execute(data, data_pca, optimal_num):
     results_df = pd.concat([data, components_df], axis=1)
     
     return results_df, components_df
+
+def resample_dataframe(feats, targ):
+	
+    feats['label'] = targ
+    majority_class = feats[feats['label'] == 0]
+    minority_class = feats[feats['label'] == 1]
+    
+    minority_upsampled = resample(minority_class, replace=True, n_samples=len(majority_class), random_state=0)
+    
+    combined =  pd.concat([majority_class, minority_upsampled])
+    
+    combined_targ = combined['label']
+    combined_feats = combined.drop(['label'], axis=1)
+    combined_feats.reset_index(drop=True, inplace=True)
+    combined_targ.reset_index(drop=True, inplace=True)
+    
+    return combined_feats, combined_targ
