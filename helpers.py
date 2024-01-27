@@ -335,6 +335,23 @@ def performance_index(data, target_cols, diff=False):
         target_cols.remove('B_perf_idx')
         data['perf_diff'] = data['R_perf_idx'] - data['B_perf_idx']
     
-    target_cols.append('perf_diff')
+        target_cols.append('perf_diff')
     
     return data, target_cols
+
+def fine_tuning_setup(ufc, one_or_two=False):
+    ufc = pd.read_csv('ufc-master.csv')
+    AD = data_prep_and_feat_engineering(ufc, cat_thresh=0.001, squared_thresh=0.0625)
+    target_cols = AD['approach 6'][1]
+    ufc, target_cols = performance_index(ufc, target_cols, diff=one_or_two)
+    le = LabelEncoder()
+    ufc = ufc.dropna(subset=target_cols)
+    feats = ufc[target_cols]
+    targ = [1 if victor == 'Red' else 0 for victor in ufc['Winner'] ]
+    r_feats, r_targ = resample_dataframe(feats, targ)
+    _, cat = num_and_cat(r_feats)
+    for col in cat:
+        r_feats[col] = le.fit_transform(r_feats[col])
+    
+    return r_feats, r_targ
+    
