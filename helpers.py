@@ -6,6 +6,8 @@ from sklearn.metrics import accuracy_score
 from sklearn.decomposition import PCA 
 from sklearn.utils import resample 
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go 
+
 
 ### Prep
 
@@ -170,6 +172,102 @@ def disc_cols_with_differences(data):
     
     return features, desired_cols, target
 
+### MORE EDA AND FEATURE ENGINEERING 
+### Graph PCA 
+def pca_graph(data):
+    scale = StandardScaler()
+    pca = PCA()
+    
+    data_stand = scale.fit_transform(data)
+    data_pca = pca.fit_transform(data_stand)
+    
+    explained_variance_ratio = pca.explained_variance_ratio_
+    cumulative_explained_variance = explained_variance_ratio.cumsum()
+    
+    plt.plot(range(1, len(cumulative_explained_variance) + 1), cumulative_explained_variance, marker='o')
+    plt.title('Cumulative Explained Variance Ratio')
+    plt.xlabel('Number of Principal Components')
+    plt.ylabel('Cumulative Explained Variance Ratio')
+    plt.show()
+    
+    return data_pca
+
+### Get Principal Components 
+def pca_execute(data, data_pca, optimal_num):
+    selected_components = data_pca[:, :optimal_num]
+    components_df = pd.DataFrame(data=selected_components, columns=[f'PC{i+1}' for i in range(optimal_num)])
+    results_df = pd.concat([data, components_df], axis=1)
+    
+    return results_df, components_df
+
+### Euclid Sum for Performance Index Feature 
+def euclid_sum(x, y, z):
+    sum = 0
+    
+    for val in [x, y, z]:
+        sum += val**2
+    
+    return np.sqrt(sum)
+
+### Calculate Performance index (either as a difference, or as two different variables)
+def performance_index(data, target_cols, diff=False):
+    R_perf_idx = []
+    B_perf_idx = []
+    
+    for i, row in data.iterrows():
+        R_perf_idx.append(euclid_sum(row['R_avg_SIG_STR_pct'], row['R_avg_SUB_ATT'], row['R_avg_TD_pct']))
+        B_perf_idx.append(euclid_sum(row['B_avg_SIG_STR_pct'], row['B_avg_SUB_ATT'], row['B_avg_TD_pct']))
+        
+    data['R_perf_idx'] = R_perf_idx
+    data['B_perf_idx'] = B_perf_idx
+    
+    target_cols.append('R_perf_idx')
+    target_cols.append('B_perf_idx')
+    
+    if diff:
+        target_cols.remove('R_perf_idx')
+        target_cols.remove('B_perf_idx')
+        data['perf_diff'] = data['R_perf_idx'] - data['B_perf_idx']
+    
+        target_cols.append('perf_diff')
+    
+    return data, target_cols
+
+### Plot different class levels for a feature (REQUIRES BREAK INTO RED WIN AND BLUE WIN)
+def red_vs_blue(df1, df2, col_name):
+    
+    fig = go.Figure()
+    
+    fig.add_trace(go.Histogram(x=df1[col_name], histnorm='probability density', name='Red Win'))
+    fig.add_trace(go.Histogram(x=df2[col_name], histnorm='probability density', name='Blue Win'))
+    
+    fig.update_layout(
+    	title="Density Plot of column1 (Dataset 1) and column2 (Dataset 2)",
+    	xaxis_title="Column Values",
+    	yaxis_title="Density",
+    	barmode='overlay'  # Overlay histograms for better comparison
+	)
+    
+    fig.show()
+
+### Resample to balance data
+def resample_dataframe(feats, targ):
+	
+    feats['label'] = targ
+    majority_class = feats[feats['label'] == 0]
+    minority_class = feats[feats['label'] == 1]
+    
+    minority_upsampled = resample(minority_class, replace=True, n_samples=len(majority_class), random_state=0)
+    
+    combined =  pd.concat([majority_class, minority_upsampled])
+    
+    combined_targ = combined['label']
+    combined_feats = combined.drop(['label'], axis=1)
+    combined_feats.reset_index(drop=True, inplace=True)
+    combined_targ.reset_index(drop=True, inplace=True)
+    
+    return combined_feats, combined_targ
+
 ### FULL FLOW FOR PREPROCESSING AND DATA PREPARATION 
 
 ### full flow to create all different approach datasets (NOT ENCODED)
@@ -221,6 +319,7 @@ def break_down_bundle(bundle):
     
     return X, y
 
+### Test models against majority vote and average 
 def majority_vote(model_list, features, target):
     
     X_train, X_test, y_train, y_test = train_test_split(features, target, random_state=0, test_size=0.2)
@@ -266,79 +365,7 @@ def majority_vote(model_list, features, target):
     print("******************************************************************************")
     print("")
     
-def pca_graph(data):
-    scale = StandardScaler()
-    pca = PCA()
-    
-    data_stand = scale.fit_transform(data)
-    data_pca = pca.fit_transform(data_stand)
-    
-    explained_variance_ratio = pca.explained_variance_ratio_
-    cumulative_explained_variance = explained_variance_ratio.cumsum()
-    
-    plt.plot(range(1, len(cumulative_explained_variance) + 1), cumulative_explained_variance, marker='o')
-    plt.title('Cumulative Explained Variance Ratio')
-    plt.xlabel('Number of Principal Components')
-    plt.ylabel('Cumulative Explained Variance Ratio')
-    plt.show()
-    
-    return data_pca
-
-def pca_execute(data, data_pca, optimal_num):
-    selected_components = data_pca[:, :optimal_num]
-    components_df = pd.DataFrame(data=selected_components, columns=[f'PC{i+1}' for i in range(optimal_num)])
-    results_df = pd.concat([data, components_df], axis=1)
-    
-    return results_df, components_df
-
-def resample_dataframe(feats, targ):
-	
-    feats['label'] = targ
-    majority_class = feats[feats['label'] == 0]
-    minority_class = feats[feats['label'] == 1]
-    
-    minority_upsampled = resample(minority_class, replace=True, n_samples=len(majority_class), random_state=0)
-    
-    combined =  pd.concat([majority_class, minority_upsampled])
-    
-    combined_targ = combined['label']
-    combined_feats = combined.drop(['label'], axis=1)
-    combined_feats.reset_index(drop=True, inplace=True)
-    combined_targ.reset_index(drop=True, inplace=True)
-    
-    return combined_feats, combined_targ
-
-def euclid_sum(x, y, z):
-    sum = 0
-    
-    for val in [x, y, z]:
-        sum += val**2
-    
-    return np.sqrt(sum)
-
-def performance_index(data, target_cols, diff=False):
-    R_perf_idx = []
-    B_perf_idx = []
-    
-    for i, row in data.iterrows():
-        R_perf_idx.append(euclid_sum(row['R_avg_SIG_STR_pct'], row['R_avg_SUB_ATT'], row['R_avg_TD_pct']))
-        B_perf_idx.append(euclid_sum(row['B_avg_SIG_STR_pct'], row['B_avg_SUB_ATT'], row['B_avg_TD_pct']))
-        
-    data['R_perf_idx'] = R_perf_idx
-    data['B_perf_idx'] = B_perf_idx
-    
-    target_cols.append('R_perf_idx')
-    target_cols.append('B_perf_idx')
-    
-    if diff:
-        target_cols.remove('R_perf_idx')
-        target_cols.remove('B_perf_idx')
-        data['perf_diff'] = data['R_perf_idx'] - data['B_perf_idx']
-    
-        target_cols.append('perf_diff')
-    
-    return data, target_cols
-
+### Advanced Setup and Preprocessing 
 def fine_tuning_setup(ufc, one_or_two=False):
     ufc = pd.read_csv('ufc-master.csv')
     AD = data_prep_and_feat_engineering(ufc, cat_thresh=0.001, squared_thresh=0.0625)
@@ -355,6 +382,7 @@ def fine_tuning_setup(ufc, one_or_two=False):
     
     return r_feats, r_targ
 
+### Run through models and evaluate 
 def simulate(feats, targ, ml_dict):
     X_train, X_test, y_train, y_test = train_test_split(feats, targ, random_state=0, test_size=0.2)
     
@@ -362,4 +390,5 @@ def simulate(feats, targ, ml_dict):
         model = ml_dict[ml]
         model.fit(X_train, y_train)
         model_preds = model.predict(X_test)
+        print(ml)
         print(accuracy_score(model_preds, y_test))
