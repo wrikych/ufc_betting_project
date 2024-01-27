@@ -354,4 +354,12 @@ def fine_tuning_setup(ufc, one_or_two=False):
         r_feats[col] = le.fit_transform(r_feats[col])
     
     return r_feats, r_targ
+
+def simulate(feats, targ, ml_dict):
+    X_train, X_test, y_train, y_test = train_test_split(feats, targ, random_state=0, test_size=0.2)
     
+    for ml in ml_dict.keys():
+        model = ml_dict[ml]
+        model.fit(X_train, y_train)
+        model_preds = model.predict(X_test)
+        print(accuracy_score(model_preds, y_test))
