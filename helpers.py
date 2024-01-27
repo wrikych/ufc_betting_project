@@ -307,3 +307,34 @@ def resample_dataframe(feats, targ):
     combined_targ.reset_index(drop=True, inplace=True)
     
     return combined_feats, combined_targ
+
+def euclid_sum(x, y, z):
+    sum = 0
+    
+    for val in [x, y, z]:
+        sum += val**2
+    
+    return np.sqrt(sum)
+
+def performance_index(data, target_cols, diff=False):
+    R_perf_idx = []
+    B_perf_idx = []
+    
+    for i, row in data.iterrows():
+        R_perf_idx.append(euclid_sum(row['R_avg_SIG_STR_pct'], row['R_avg_SUB_ATT'], row['R_avg_TD_pct']))
+        B_perf_idx.append(euclid_sum(row['B_avg_SIG_STR_pct'], row['B_avg_SUB_ATT'], row['B_avg_TD_pct']))
+        
+    data['R_perf_idx'] = R_perf_idx
+    data['B_perf_idx'] = B_perf_idx
+    
+    target_cols.append('R_perf_idx')
+    target_cols.append('B_perf_idx')
+    
+    if diff:
+        target_cols.remove('R_perf_idx')
+        target_cols.remove('B_perf_idx')
+        data['perf_diff'] = data['R_perf_idx'] - data['B_perf_idx']
+    
+    target_cols.append('perf_diff')
+    
+    return data, target_cols
