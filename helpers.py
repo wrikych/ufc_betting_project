@@ -251,6 +251,23 @@ def red_vs_blue(df1, df2, col_name):
 	)
     
     fig.show()
+    
+### Just one graph - showing distribution for one variable
+### Plot different class levels for a feature (REQUIRES BREAK INTO RED WIN AND BLUE WIN)
+def red_vs_blue(df, col_name):
+    
+    fig = go.Figure()
+    
+    fig.add_trace(go.Histogram(x=df[col_name], histnorm='probability density', name='Distribution'))
+    
+    fig.update_layout(
+    	title=f"Density Plot of {col_name}",
+    	xaxis_title="Column Values",
+    	yaxis_title="Density",
+    	barmode='overlay'  # Overlay histograms for better comparison
+	)
+    
+    fig.show()
 
 ### Resample to balance data
 def resample_dataframe(feats, targ):
@@ -416,7 +433,6 @@ def execute_voting_clf(feats, targ, ml_dict, vote_style='hard'):
     vote.fit(X_train, y_train)
     vote_preds = vote.predict(X_test)
     return accuracy_score(vote_preds, y_test)
-
 
 ### A more nuanced personal custom voting algorithm 
 def custom_ensemble_execute(feats, targ, ml_dict, tipping_point):
