@@ -253,8 +253,7 @@ def red_vs_blue(df1, df2, col_name):
     fig.show()
     
 ### Just one graph - showing distribution for one variable
-### Plot different class levels for a feature (REQUIRES BREAK INTO RED WIN AND BLUE WIN)
-def red_vs_blue(df, col_name):
+def just_one_graph(df, col_name):
     
     fig = go.Figure()
     
