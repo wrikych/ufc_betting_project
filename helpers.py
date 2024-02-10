@@ -240,8 +240,8 @@ def red_vs_blue(df1, df2, col_name):
     
     fig = go.Figure()
     
-    fig.add_trace(go.Histogram(x=df1[col_name], histnorm='probability density', name='Red Win'))
-    fig.add_trace(go.Histogram(x=df2[col_name], histnorm='probability density', name='Blue Win'))
+    fig.add_trace(go.Histogram(x=df1[col_name], histnorm='probability density', name='Blue Win'))
+    fig.add_trace(go.Histogram(x=df2[col_name], histnorm='probability density', name='Red Win'))
     
     fig.update_layout(
     	title="Density Plot of column1 (Dataset 1) and column2 (Dataset 2)",
@@ -289,10 +289,15 @@ def resample_dataframe(feats, targ):
 ### FULL FLOW FOR PREPROCESSING AND DATA PREPARATION 
 
 ### full flow to create all different approach datasets (NOT ENCODED)
-def data_prep_and_feat_engineering(data, cat_thresh, squared_thresh):
+def data_prep_and_feat_engineering(data, cat_thresh, squared_thresh, nulls='drop', null_cols=None):
+    
+    
     
     ### handle nulls
-    data = handle_nulls(data)
+    if nulls == 'handle':
+        data = handle_nulls(data)
+    elif nulls == 'drop':
+        data = data.dropna(subset=null_cols)
     
     ### dictionary of approaches 
     approach_dict = {1 : dummy_approach,
