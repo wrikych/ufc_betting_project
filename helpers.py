@@ -289,15 +289,12 @@ def resample_dataframe(feats, targ):
 ### FULL FLOW FOR PREPROCESSING AND DATA PREPARATION 
 
 ### full flow to create all different approach datasets (NOT ENCODED)
-def data_prep_and_feat_engineering(data, cat_thresh, squared_thresh, nulls='drop', null_cols=None):
+def data_prep_and_feat_engineering(data, cat_thresh, squared_thresh):
     
     
     
     ### handle nulls
-    if nulls == 'handle':
-        data = handle_nulls(data)
-    elif nulls == 'drop':
-        data = data.dropna(subset=null_cols)
+    data = handle_nulls(data)
     
     ### dictionary of approaches 
     approach_dict = {1 : dummy_approach,
